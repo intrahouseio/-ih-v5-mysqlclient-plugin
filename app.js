@@ -18,12 +18,12 @@ module.exports = async function(plugin) {
     database: plugin.params.data.database
   }
   const reqs = prepare(plugin.channels.data);
-  plugin.log('Reqs=' + util.inspect(reqs, null, 4));
+  plugin.log('Reqs=' + util.inspect(reqs, null, 4), 1);
 
   try {
     await client.createPoolToDatabase(options);
   } catch (error) {
-    plugin.log('Error' + error)
+    plugin.log('Error' + error, 1)
     process.exit(0);
   }
   let currentReqIdx = -1;
@@ -40,29 +40,29 @@ module.exports = async function(plugin) {
 
       // Выполнить запрос
       reqResult = await runReq(item.req);
-      plugin.log('reqResult=' + util.inspect(reqResult));
+      plugin.log('reqResult=' + util.inspect(reqResult), 2);
 
       // Обработать результат с помощью функции scriptfile
       if (reqResult && item.fn) {
         scriptResult = item.fn(reqResult, plugin);
       }
-      plugin.log('scriptResult=' + util.inspect(scriptResult));
+      plugin.log('scriptResult=' + util.inspect(scriptResult), 2);
 
       const data = [];
       if (scriptResult && Array.isArray(item.children)) {
         // Подставить из children
         item.children.forEach(child => {
           if (scriptResult[child.id] != undefined) {
-            data.push({ id: child.id, value: scriptResult[child.id] });
+            data.push({ id: child.id, value: scriptResult[child.id].val, ts: scriptResult[child.id].ts  });
           }
         });
       }
 
       // Отправить на сервер
-      plugin.log('data=' + util.inspect(data));
+      plugin.log('data=' + util.inspect(data), 2);
       if (data.length) plugin.sendData(data);
     } catch (e) {
-      plugin.log('ERROR: ' + util.inspect(e));
+      plugin.log('ERROR: ' + util.inspect(e), 1);
     }
 
     await sleep(delay || 1000);
@@ -80,7 +80,7 @@ module.exports = async function(plugin) {
   function prepare(data) {
     const folders = [];
     const children = {};
-    plugin.log('prepare data=' + util.inspect(data, null, 4));
+    plugin.log('prepare data=' + util.inspect(data, null, 4), 2);
 
     data.forEach(item => {
       if (!item.parentid) {
@@ -103,7 +103,7 @@ module.exports = async function(plugin) {
       let fn = require(item.scriptfile);
       return fn;
     } catch (e) {
-      plugin.log(util.inspect(item) + ' Script error ' + util.inspect(e));
+      plugin.log(util.inspect(item) + ' Script error ' + util.inspect(e),1);
       return '';
     }
   }
